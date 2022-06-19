@@ -20,11 +20,11 @@ Jump To:
 Use `go get` to retrieve the SDK to add it to your `GOPATH` workspace, or
 project's Go module dependencies.
 
-    go get github.com/thrcorrea/envloader.git
+    go get github.com/thrcorrea/envloader
 
 To update the module use `go get -u` to retrieve the latest version of the module.
 
-    go get -u github.com/thrcorrea/envloader.git
+    go get -u github.com/thrcorrea/envloader
 
 ### Go Modules
 
@@ -32,11 +32,11 @@ If you are using Go modules, your `go get` will default to the latest tagged
 release version of the module. To get a specific release version of the module use
 `@<tag>` in your `go get` command.
 
-    go get github.com/thrcorrea/envloader.git@v1.0.0
+    go get github.com/thrcorrea/envloader@v1.0.0
 
 To get the latest module repository change use `@latest`.
 
-    go get github.com/thrcorrea/envloader.git@latest
+    go get github.com/thrcorrea/envloader@latest
 
 ## Quick Examples
 
@@ -55,7 +55,7 @@ REGION=aws-secret-manager-region
 package main
 
 import (
-    "github.com/thrcorrea/envloader.git"
+    "github.com/thrcorrea/envloader"
 )
 
 type Environment struct {
