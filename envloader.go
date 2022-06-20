@@ -7,8 +7,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/bavatech/envloader/internal/secretmanager"
 	"github.com/joho/godotenv"
-	"github.com/thrcorrea/envloader/internal/secretmanager"
 )
 
 const (

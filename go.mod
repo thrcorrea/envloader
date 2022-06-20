@@ -1,4 +1,4 @@
-module github.com/thrcorrea/envloader
+module github.com/bavatech/envloader
 
 go 1.17
 
@@ -7,7 +7,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.5.1
 	github.com/joho/godotenv v1.3.0
 	github.com/stretchr/testify v1.7.0
-	gitlab.com/bavatech/architecture/software/libs/go-modules/envloader.git v1.1.1
 )
 
 require (
