@@ -3,8 +3,8 @@ package secretmanager_test
 import (
 	"testing"
 
+	"github.com/bavatech/envloader/internal/secretmanager"
 	"github.com/stretchr/testify/assert"
-	"github.com/thrcorrea/envloader/internal/secretmanager"
 )
 
 func Test_NewInstance(t *testing.T) {
