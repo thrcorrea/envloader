@@ -1,6 +1,6 @@
 # EnvLoader
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg?cacheSeconds=2592000)
+![Version](https://img.shields.io/badge/version-1.0.1-blue.svg?cacheSeconds=2592000)
 
 Secret manager integration to get application environment variables. Any variable not set by the secret manager will be set by OS envs.
 
@@ -32,7 +32,7 @@ If you are using Go modules, your `go get` will default to the latest tagged
 release version of the module. To get a specific release version of the module use
 `@<tag>` in your `go get` command.
 
-    go get github.com/bavatech/envloader@v1.0.0
+    go get github.com/bavatech/envloader@v1.0.1
 
 To get the latest module repository change use `@latest`.
 
