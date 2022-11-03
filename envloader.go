@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/bavatech/envloader/internal/secretmanager"
@@ -16,11 +17,11 @@ const (
 	DefaultKey  = "default"
 )
 
-func loadSecretManager(vars interface{}) (map[string]string, error) {
+func loadSecretManager(vars interface{}) (map[string]interface{}, error) {
+	var secretsMap map[string]interface{}
+
 	secretName := os.Getenv("SECRET_NAME")
 	region := os.Getenv("REGION")
-
-	secretsMap := map[string]string{}
 
 	if secretName != "" {
 		sm, err := secretmanager.NewInstance(region)
@@ -41,16 +42,19 @@ func loadSecretManager(vars interface{}) (map[string]string, error) {
 	return secretsMap, nil
 }
 
-func loadEnvVars(vars interface{}, secretsMap map[string]string) error {
-
+func loadEnvVars(vars interface{}, secretsMap map[string]interface{}) error {
 	pointr := reflect.ValueOf(vars)
 	values := pointr.Elem()
 	typeOfValues := values.Type()
 
 	for i := 0; i < values.NumField(); i++ {
-		value := values.Field(i).String()
+		value := values.Field(i)
 		field := pointr.Elem().Field(i)
 		fieldName := typeOfValues.Field(i).Name
+
+		// value := values.Field(i).String()
+		// field := pointr.Elem().Field(i)
+		// fieldName := typeOfValues.Field(i).Name
 
 		fieldKey := fieldName
 		optional := false
@@ -64,23 +68,70 @@ func loadEnvVars(vars interface{}, secretsMap map[string]string) error {
 			for _, key := range keys {
 				if key == OptionalKey {
 					optional = true
-				} else if strings.Index(key, DefaultKey+"=") == 0 && value == "" {
+				} else if strings.Index(key, DefaultKey+"=") == 0 && value.String() == "" {
 					opts := strings.Split(key, "=")
 					defaultValue = opts[1]
 				}
 			}
 		}
 
-		if field.CanSet() && value == "" {
-			field.SetString(os.Getenv(fieldKey))
+		fmt.Println(value, field, fieldName, os.Getenv(fieldKey), optional, defaultValue)
 
-			if secretsMap[fieldKey] != "" {
-				field.SetString(secretsMap[fieldKey])
-			}
+		if field.CanSet() {
+			envValue := os.Getenv(fieldKey)
 
-			if field.String() == "" {
-				field.SetString(defaultValue)
+			switch field.Kind() {
+			case reflect.Slice:
+				splitEnvValue := strings.Split(envValue, " ")
+
+				switch field.Interface().(type) {
+				case []int:
+					for _, strValue := range splitEnvValue {
+						intValue, err := strconv.Atoi(strValue)
+
+						if err != nil {
+							return err
+						}
+
+						value.Set(reflect.Append(value, reflect.ValueOf(intValue)))
+					}
+				case []int32:
+					for _, strValue := range splitEnvValue {
+						intValue, err := strconv.Atoi(strValue)
+
+						if err != nil {
+							return err
+						}
+
+						value.Set(reflect.Append(value, reflect.ValueOf(int32(intValue))))
+					}
+				case []int64:
+					for _, strValue := range splitEnvValue {
+						intValue, err := strconv.Atoi(strValue)
+
+						if err != nil {
+							return err
+						}
+
+						value.Set(reflect.Append(value, reflect.ValueOf(int64(intValue))))
+					}
+				case []string:
+					for _, strValue := range splitEnvValue {
+						value.Set(reflect.Append(value, reflect.ValueOf(strValue)))
+					}
+				}
 			}
+			// field.SetString(os.Getenv(fieldKey))
+
+			// fmt.Println(field.String())
+
+			// if secretsMap[fieldKey] != nil {
+			// 	field.SetString(secretsMap[fieldKey].(string))
+			// }
+
+			// if field.String() == "" {
+			// 	field.SetString(defaultValue)
+			// }
 		}
 
 		if !optional && field.String() == "" {
