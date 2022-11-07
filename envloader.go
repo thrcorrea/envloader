@@ -52,10 +52,6 @@ func loadEnvVars(vars interface{}, secretsMap map[string]interface{}) error {
 		field := pointr.Elem().Field(i)
 		fieldName := typeOfValues.Field(i).Name
 
-		// value := values.Field(i).String()
-		// field := pointr.Elem().Field(i)
-		// fieldName := typeOfValues.Field(i).Name
-
 		fieldKey := fieldName
 		optional := false
 		defaultValue := ""
@@ -71,11 +67,7 @@ func loadEnvVars(vars interface{}, secretsMap map[string]interface{}) error {
 				} else if strings.Index(key, DefaultKey+"=") == 0 {
 					opts := strings.Split(key, "=")
 
-					if value.String() == "" {
-						defaultValue = opts[1]
-					}
-
-					if value.CanInt() {
+					if value.CanSet() {
 						defaultValue = opts[1]
 					}
 				}
@@ -86,8 +78,6 @@ func loadEnvVars(vars interface{}, secretsMap map[string]interface{}) error {
 			field.Set(reflect.ValueOf(secretsMap[fieldKey]))
 			continue
 		}
-
-		fmt.Println(defaultValue, value.CanInt())
 
 		if field.CanSet() {
 			envValue := os.Getenv(fieldKey)
@@ -133,14 +123,29 @@ func loadEnvVars(vars interface{}, secretsMap map[string]interface{}) error {
 					field.SetString(envValue)
 				}
 			case reflect.Int:
-			case reflect.Int32:
-				intConv, err := strconv.Atoi(envValue)
-
-				if err != nil {
+				if err := appendIntValue[int](envValue, value); err != nil {
 					return err
 				}
-
-				field.Set(reflect.ValueOf(intConv))
+			case reflect.Int16:
+				if err := appendIntValue[int16](envValue, value); err != nil {
+					return err
+				}
+			case reflect.Int32:
+				if err := appendIntValue[int32](envValue, value); err != nil {
+					return err
+				}
+			case reflect.Int64:
+				if err := appendIntValue[int64](envValue, value); err != nil {
+					return err
+				}
+			case reflect.Float32:
+				if err := appendFloatValue[float32](envValue, value); err != nil {
+					return err
+				}
+			case reflect.Float64:
+				if err := appendFloatValue[float64](envValue, value); err != nil {
+					return err
+				}
 			}
 
 		}
@@ -235,6 +240,28 @@ func appendFloatValues[T float32 | float64](splitEnvValue []string, reflectValue
 
 func appendIntValue[T int | int16 | int32 | int64](value string, reflectValue reflect.Value) error {
 	strConv, err := strconv.Atoi(value)
+
+	if err != nil {
+		return err
+	}
+
+	reflectValue.Set(reflect.ValueOf(T(strConv)))
+
+	return nil
+}
+
+func appendFloatValue[T float32 | float64](value string, reflectValue reflect.Value) (err error) {
+	var floatSize int
+	var ret T
+
+	switch any(ret).(type) {
+	case float32:
+		floatSize = 32
+	case float64:
+		floatSize = 64
+	}
+
+	strConv, err := strconv.ParseFloat(value, floatSize)
 
 	if err != nil {
 		return err
