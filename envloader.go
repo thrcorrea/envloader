@@ -68,17 +68,33 @@ func loadEnvVars(vars interface{}, secretsMap map[string]interface{}) error {
 			for _, key := range keys {
 				if key == OptionalKey {
 					optional = true
-				} else if strings.Index(key, DefaultKey+"=") == 0 && value.String() == "" {
+				} else if strings.Index(key, DefaultKey+"=") == 0 {
 					opts := strings.Split(key, "=")
-					defaultValue = opts[1]
+
+					if value.String() == "" {
+						defaultValue = opts[1]
+					}
+
+					if value.CanInt() {
+						defaultValue = opts[1]
+					}
 				}
 			}
 		}
 
-		fmt.Println(value, field, fieldName, os.Getenv(fieldKey), optional, defaultValue)
+		if secretsMap[fieldKey] != nil {
+			field.Set(reflect.ValueOf(secretsMap[fieldKey]))
+			continue
+		}
+
+		fmt.Println(defaultValue, value.CanInt())
 
 		if field.CanSet() {
 			envValue := os.Getenv(fieldKey)
+
+			if envValue == "" && defaultValue != "" {
+				envValue = defaultValue
+			}
 
 			switch field.Kind() {
 			case reflect.Slice:
@@ -86,52 +102,47 @@ func loadEnvVars(vars interface{}, secretsMap map[string]interface{}) error {
 
 				switch field.Interface().(type) {
 				case []int:
-					for _, strValue := range splitEnvValue {
-						intValue, err := strconv.Atoi(strValue)
-
-						if err != nil {
-							return err
-						}
-
-						value.Set(reflect.Append(value, reflect.ValueOf(intValue)))
+					if err := appendIntValues[int](splitEnvValue, value); err != nil {
+						return err
+					}
+				case []int16:
+					if err := appendIntValues[int16](splitEnvValue, value); err != nil {
+						return err
 					}
 				case []int32:
-					for _, strValue := range splitEnvValue {
-						intValue, err := strconv.Atoi(strValue)
-
-						if err != nil {
-							return err
-						}
-
-						value.Set(reflect.Append(value, reflect.ValueOf(int32(intValue))))
+					if err := appendIntValues[int32](splitEnvValue, value); err != nil {
+						return err
 					}
 				case []int64:
-					for _, strValue := range splitEnvValue {
-						intValue, err := strconv.Atoi(strValue)
-
-						if err != nil {
-							return err
-						}
-
-						value.Set(reflect.Append(value, reflect.ValueOf(int64(intValue))))
+					if err := appendIntValues[int64](splitEnvValue, value); err != nil {
+						return err
+					}
+				case []float32:
+					if err := appendFloatValues[float32](splitEnvValue, value); err != nil {
+						return err
+					}
+				case []float64:
+					if err := appendFloatValues[float64](splitEnvValue, value); err != nil {
+						return err
 					}
 				case []string:
-					for _, strValue := range splitEnvValue {
-						value.Set(reflect.Append(value, reflect.ValueOf(strValue)))
-					}
+					value.Set(reflect.ValueOf(splitEnvValue))
 				}
+			case reflect.String:
+				if field.String() == "" {
+					field.SetString(envValue)
+				}
+			case reflect.Int:
+			case reflect.Int32:
+				intConv, err := strconv.Atoi(envValue)
+
+				if err != nil {
+					return err
+				}
+
+				field.Set(reflect.ValueOf(intConv))
 			}
-			// field.SetString(os.Getenv(fieldKey))
 
-			// fmt.Println(field.String())
-
-			// if secretsMap[fieldKey] != nil {
-			// 	field.SetString(secretsMap[fieldKey].(string))
-			// }
-
-			// if field.String() == "" {
-			// 	field.SetString(defaultValue)
-			// }
 		}
 
 		if !optional && field.String() == "" {
@@ -154,6 +165,82 @@ func Load(vars interface{}, filenames ...string) error {
 	if err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func scanNumericsValues[T int | int16 | int32 | int64](values []string) ([]T, error) {
+	var ret []T
+
+	for _, strValue := range values {
+		intValue, err := strconv.Atoi(strValue)
+
+		if err != nil {
+			return ret, err
+		}
+
+		ret = append(ret, T(intValue))
+	}
+
+	return ret, nil
+}
+
+func appendIntValues[T int | int16 | int32 | int64](splitEnvValue []string, reflectValue reflect.Value) error {
+	scannedValues, err := scanNumericsValues[T](splitEnvValue)
+
+	if err != nil {
+		return err
+	}
+
+	reflectValue.Set(reflect.ValueOf(scannedValues))
+
+	return nil
+}
+
+func scanFloatValues[T float32 | float64](values []string) ([]T, error) {
+	var floatSize int
+	var ret []T
+
+	switch any(ret).(type) {
+	case []float32:
+		floatSize = 32
+	case []float64:
+		floatSize = 64
+	}
+
+	for _, strValue := range values {
+		strConv, err := strconv.ParseFloat(strValue, floatSize)
+
+		if err != nil {
+			return ret, err
+		}
+
+		ret = append(ret, T(strConv))
+	}
+
+	return ret, nil
+}
+
+func appendFloatValues[T float32 | float64](splitEnvValue []string, reflectValue reflect.Value) error {
+	scannedValues, err := scanFloatValues[T](splitEnvValue)
+
+	if err != nil {
+		return err
+	}
+
+	reflectValue.Set(reflect.ValueOf(scannedValues))
+
+	return nil
+}
+
+func appendIntValue[T int | int16 | int32 | int64](value string, reflectValue reflect.Value) error {
+	strConv, err := strconv.Atoi(value)
+
+	if err != nil {
+		return err
+	}
+
+	reflectValue.Set(reflect.ValueOf(T(strConv)))
 
 	return nil
 }
