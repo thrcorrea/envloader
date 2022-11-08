@@ -34,6 +34,8 @@ func loadSecretManager(vars interface{}) (map[string]interface{}, error) {
 			return nil, err
 		}
 
+		fmt.Println(*secret)
+
 		if err := json.Unmarshal([]byte(*secret), &secretsMap); err != nil {
 			return nil, err
 		}
@@ -74,13 +76,12 @@ func loadEnvVars(vars interface{}, secretsMap map[string]interface{}) error {
 			}
 		}
 
-		if secretsMap[fieldKey] != nil {
-			field.Set(reflect.ValueOf(secretsMap[fieldKey]))
-			continue
-		}
-
 		if field.CanSet() {
 			envValue := os.Getenv(fieldKey)
+
+			if secretsMap[fieldKey] != nil {
+				envValue = secretsMap[fieldKey].(string)
+			}
 
 			if envValue == "" && defaultValue != "" {
 				envValue = defaultValue
