@@ -34,8 +34,6 @@ func loadSecretManager(vars interface{}) (map[string]interface{}, error) {
 			return nil, err
 		}
 
-		fmt.Println(*secret)
-
 		if err := json.Unmarshal([]byte(*secret), &secretsMap); err != nil {
 			return nil, err
 		}
