@@ -7,12 +7,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type TestStruct struct {
-	FirstName string `env:"first_name"`
-	LastName  string `env:"last_name"`
-}
-
 func TestLoad(t *testing.T) {
+	type TestStruct struct {
+		FirstName     string  `env:"first_name"`
+		LastName      string  `env:"last_name"`
+		Period        int     `env:"period"`
+		Period16      int16   `env:"period"`
+		Period32      int32   `env:"period"`
+		Period64      int64   `env:"period"`
+		AmountFloat32 float32 `env:"amount"`
+		AmountFloat64 float64 `env:"amount"`
+	}
+
 	var success TestStruct
 
 	type args struct {
@@ -28,7 +34,16 @@ func TestLoad(t *testing.T) {
 		{
 			name: "success full filled",
 			args: args{vars: &success, filenames: []string{"test.env"}},
-			want: TestStruct{FirstName: "Bava", LastName: "Bavarian"},
+			want: TestStruct{
+				FirstName:     "Bava",
+				LastName:      "Bavarian",
+				Period:        150,
+				Period16:      150,
+				Period32:      150,
+				Period64:      150,
+				AmountFloat32: 99.99,
+				AmountFloat64: 99.99,
+			},
 		},
 	}
 	for _, tt := range tests {
