@@ -77,10 +77,82 @@ func main() {
     // will run only if SECRET_NAME and REGION is setted in dotenv file
     // load environment with dotenv values and secret manager values
     // default file name is ".env" and doesn't need to be sent
-    err := envloader.Load(&env, ".env.test")
+    err := envloader.Load(
+        &env,
+        envloader.WithGodotenvConfig([]string{".env.test"}),
+    )
+
     if err != nil {
         // failed to load environment variables
         panic(err)
     }
 }
 ```
+
+<details>
+  <summary>Example using custom aws config</summary>
+  Probably this config will be used to test with [localstack](https://github.com/localstack/localstack) or another local package.
+  <br /><br />
+  
+  ```go
+    package main
+
+    import (
+        "github.com/bavatech/envloader"
+        "log"
+    )
+
+    type Environment struct {
+        DBHost          string `env:"DB_HOST"`
+        DBName          string `env:"DB_NAME"`
+        DBPort          string `env:"DB_PORT"`
+        DBUser          string `env:"DB_USER"`
+        DBPassword      string `env:"DB_PSWD"`
+        RabbitHost      string `env:"AMQP_HOST"`
+        RabbitUser      string `env:"AMQP_USER"`
+        RabbitPassword  string `env:"AMQP_PSWD"`
+        AmqpVHost       string `env:"AMQP_VHOST,optional"` // optional = disable empty validation
+        AmqpProtocol    string `env:"AMQP_PROTOCOL,optional,default=AMQP"` //default, set a default value if key not setted on env and secret
+    }
+
+    var env Environment
+
+    func main() {
+        awsEndpoint := "http://localhost:4566"
+        awsRegion := "us-east-1"
+
+        customResolver := aws.EndpointResolverFunc(func(service, region string) (aws.Endpoint, error) {
+            if awsEndpoint != "" {
+                return aws.Endpoint{
+                    PartitionID:   "aws",
+                    URL:           awsEndpoint,
+                    SigningRegion: awsRegion,
+                }, nil
+            }
+
+            // returning EndpointNotFoundError will allow the service to fallback to its default resolution
+            return aws.Endpoint{}, &aws.EndpointNotFoundError{}
+        })
+
+        awsCfg, err := config.LoadDefaultConfig(context.TODO(),
+            config.WithRegion(awsRegion),
+            config.WithEndpointResolver(customResolver),
+        )
+        if err != nil {
+            log.Fatal(err)
+        }
+
+        err := envloader.Load(
+            &env,
+            envloader.WithGodotenvConfig([]string{".env.test"}),
+            envloader.WithAwsConfig(
+                awsCfg,
+            ),
+        )
+
+        if err != nil {
+            panic(err)
+        }
+    }
+    ```
+</details>

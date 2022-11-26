@@ -48,7 +48,7 @@ func TestLoad(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Load(tt.args.vars, tt.args.filenames...); (err != nil) != tt.wantErr {
+			if err := Load(tt.args.vars, WithGodotenvConfig(tt.args.filenames)); (err != nil) != tt.wantErr {
 				t.Errorf("Load() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
@@ -96,7 +96,7 @@ func TestLoadSlice(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Load(&tt.args.vars, tt.args.filenames...); (err != nil) != tt.wantErr {
+			if err := Load(&tt.args.vars, WithGodotenvConfig(tt.args.filenames)); (err != nil) != tt.wantErr {
 				t.Errorf("Load() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
@@ -142,7 +142,7 @@ func TestLoadDefault(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Load(&tt.args.vars, tt.args.filenames...); (err != nil) != tt.wantErr {
+			if err := Load(&tt.args.vars, WithGodotenvConfig(tt.args.filenames)); (err != nil) != tt.wantErr {
 				t.Errorf("Load() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
